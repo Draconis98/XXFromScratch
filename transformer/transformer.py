@@ -77,6 +77,7 @@ class MultiHeadAttention(nn.Module):
         super().__init__()
         self.embed_dim = config['hidden_size']
         self.num_heads = config['num_attention_heads']
+        assert self.embed_dim % self.num_heads == 0, "embed_dim must be divisible by num_heads" 
         self.head_dim = self.embed_dim // self.num_heads
         
         self.heads = nn.ModuleList([Attention(self.embed_dim, self.head_dim, mask=mask) for _ in range(self.num_heads)])
@@ -98,6 +99,7 @@ class CrossMultiHeadAttention(nn.Module):
         super().__init__()
         self.embed_dim = config['hidden_size']
         self.num_heads = config['num_attention_heads']
+        assert self.embed_dim % self.num_heads == 0, "embed_dim must be divisible by num_heads" 
         self.head_dim = self.embed_dim // self.num_heads
         
         self.heads = nn.ModuleList([CrossAttention(self.embed_dim, self.head_dim) for _ in range(self.num_heads)])
@@ -107,28 +109,8 @@ class CrossMultiHeadAttention(nn.Module):
         x = torch.cat([h(hidden_states, encoder_hidden_states) for h in self.heads], dim=-1)
         x = self.output_proj(x)
         return x
-    
+   
 
-class MultiHeadCrossAttention(Attention):
-    def __init__(self, embed_dim: int, head_dim: int):
-        super().__init__(embed_dim, head_dim)
-        self.mask = False
-        
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        q = self.q_proj(x)
-        k = self.k_proj(x)
-        v = self.v_proj(x)
-        
-        # compute attention scores
-        attn_scores = torch.bmm(q, k.transpose(-2, -1))
-        # compute attention weights
-        attn_weights = F.softmax(attn_scores, dim=-1)
-        # compute attention output
-        attn_output = torch.bmm(attn_weights, v)
-        # project to output space
-        output = self.out_proj(attn_output)
-        return output
-    
 class FeedForward(nn.Module):
     def __init__(self, config: dict):
         super().__init__()
