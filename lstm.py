@@ -27,15 +27,18 @@ class LSTM(nn.Module):
         self.init_weights()
         
     def init_weights(self):
-        for param in self.parameters():
-            nn.init.xavier_uniform_(param)
+        for name, param in self.named_parameters():
+            if 'bias' in name:
+                nn.init.constant_(param, 0) 
+            else:
+                nn.init.xavier_uniform_(param)
         
     def forward(self, x: torch.Tensor, init_states: tuple = None) -> torch.Tensor:
         batch_size, seq_len = x.shape[0], x.shape[1]
         hidden_seq = []
         
         if init_states is None:
-            h_t, c_t = torch.zeros(batch_size, self.hidden_size), torch.zeros(batch_size, self.hidden_size)
+            h_t, c_t = torch.zeros(batch_size, self.hidden_size, device=x.device), torch.zeros(batch_size, self.hidden_size, device=x.device)
         else:
             h_t, c_t = init_states
             
